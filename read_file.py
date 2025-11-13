@@ -14,7 +14,7 @@ def main():
     with open(FILE1, mode = 'a', newline = '') as file:
         write = csv.writer(file)
 
-        print('Samlar data till ' + FILE1)
+        print('Samlar data till ' + FILE2)
         while True:
             read = ser.readline().decode('utf-8').strip()
 
