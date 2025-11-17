@@ -11,10 +11,10 @@ FILE4 = "acc_rorelse_data.csv"
 def main():
     ser = serial.Serial(SERIAL_PORT, SERIAL_RATE)
 
-    with open(FILE1, mode = 'a', newline = '') as file:
-        write = csv.writer(file)
+    with open(FILE1, mode = 'w', newline = '') as file:
+        write = csv.writer(file, delimiter= ';')
 
-        print('Samlar data till ' + FILE2)
+        print('Samlar data till ' + FILE1)
         while True:
             read = ser.readline().decode('utf-8').strip()
 
@@ -25,6 +25,8 @@ def main():
                     file.flush()
 
                 print(read)
+
+
 
 
 
