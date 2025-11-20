@@ -71,4 +71,3 @@ new_point = [-4, 1072, 20]
 k = 5
 prediction = predict_position(X_train, y_train, new_point, k)
 print(f"Predicted position: {prediction}")
-
