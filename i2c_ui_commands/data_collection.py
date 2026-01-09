@@ -57,7 +57,7 @@ def start_collection():
     serial_port.write(cmd.encode("utf-8"))
     #threading.Thread(target=read_serial_data, daemon=True).start()
     serial_port.flush()
-    time.sleep(0.3)   # <-- VIKTIGT
+    time.sleep(0.3)  
     status_label.set("Collecting data...")
     while True:
         line = serial_port.readline().decode(errors="ignore").strip()
@@ -73,13 +73,14 @@ def stop_collection():
     cmd = 'STOP\n'
     serial_port.write(cmd.encode("utf-8"))
     serial_port.flush()
-    time.sleep(0.3)   # <-- VIKTIGT
+    time.sleep(0.3)   
     while True:
         line = serial_port.readline().decode(errors="ignore").strip()
         if not line:
             break
         print("RX:", line)
     status_label.set("Stopped")
+    get_data()
 
 def read_serial_data():
     global is_collecting, serial_port, data_rows
@@ -144,7 +145,7 @@ def get_data():
                     result
                 ])
             #print("RX:", line)
-    save_dataset()
+    row_count.set(f"Rows collected: {len(data_rows)}")
 
 def save_dataset():
     global data_rows
@@ -158,8 +159,8 @@ def save_dataset():
     df.to_csv(filename, index=False)
 
     messagebox.showinfo("Saved", f"Dataset saved as {filename}")
-    data_rows = []
-    row_count.set("Rows collected: 0")
+    #data_rows = []
+    #row_count.set("Rows collected: 0")
 
 root = tk.Tk()
 root.title("Data Collection App")
@@ -196,7 +197,7 @@ def set_label(lbl):
     serial_port.write(cmd.encode("utf-8"))
     #threading.Thread(target=read_serial_data, daemon=True).start()
     serial_port.flush()
-    time.sleep(0.3)   # <-- VIKTIGT
+    time.sleep(0.3)  
     status_label.set("Setting label...")
     while True:
         line = serial_port.readline().decode(errors="ignore").strip()
@@ -224,7 +225,8 @@ row_count = tk.StringVar()
 row_count.set("Rows collected: 0")
 tk.Label(root, textvariable=row_count).pack(pady=10)
 
-tk.Button(root, text="Save Dataset", width=20, command=get_data).pack(pady=10)
+#tk.Button(root, text="Save Dataset", width=20, command=get_data).pack(pady=10)
+tk.Button(root, text="Save Dataset", width=20, command=save_dataset).pack(pady=10)
 
 root.mainloop()
 
