@@ -8,8 +8,11 @@ import serial.tools.list_ports
 import pandas as pd
 import tkinter as tk
 from tkinter import ttk, messagebox
+import struct
 
-
+BAUD = 921600
+SAMPLE_FMT = "<Ihhh"   # uint32, int16, int16, int16 (timestamp, ax, ay, az)
+SAMPLE_SIZE = struct.calcsize(SAMPLE_FMT)
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 POSITIONS = ["lying", "standing", "moving"]
@@ -43,7 +46,7 @@ def connect_serial():
         return
 
     try:
-        serial_port = serial.Serial(port, 921600, timeout=1)
+        serial_port = serial.Serial(port, BAUD, timeout=1)
         time.sleep(1)
         connection_status.set(f"Connected to {port}")
 
@@ -54,8 +57,81 @@ def connect_serial():
     except Exception as e:
         messagebox.showerror("Error", f"Could not open {port}\n{e}")
 
-
 def serial_reader_loop():
+    global session_data, serial_port, reader_thread_started, label_text
+
+    START_MARKER = b"\xAA\x55"
+    END_MARKER   = b"\x55\xAA"
+
+    chunk_counter = 0
+    text_buffer = bytearray()
+
+    while reader_thread_started:
+        if serial_port is None:
+            time.sleep(0.05)
+            continue
+
+        try:
+            b = serial_port.read(1)
+            if not b:
+                continue
+
+            # 1. Försök hitta binär start
+            if b == START_MARKER[:1]:
+                b2 = serial_port.read(1)
+                if b2 == START_MARKER[1:]:
+                    # Binär chunk startar
+                    payload = bytearray()
+
+                    while reader_thread_started:
+                        x = serial_port.read(1)
+                        if not x:
+                            break
+
+                        payload += x
+
+                        if len(payload) >= 2 and payload[-2:] == END_MARKER:
+                            payload = payload[:-2]
+                            break
+
+                    # Parsea payload
+                    samples = 0
+                    for i in range(0, len(payload), SAMPLE_SIZE):
+                        chunk = payload[i:i + SAMPLE_SIZE]
+                        if len(chunk) != SAMPLE_SIZE:
+                            continue
+
+                        ts, ax, ay, az = struct.unpack(SAMPLE_FMT, chunk)
+                        session_data.append([ts, ax, ay, az, label_text])
+                        samples += 1
+
+                    chunk_counter += 1
+
+                    root.after(
+                        0,
+                        lambda: row_count.set(f"Rows collected: {len(session_data)}")
+                    )
+
+                    #print(f"RX chunk #{chunk_counter}: {samples} samples")
+                    continue
+
+            # 2. Annars: samla text (ASCII debug)
+            if b in b"\r\n":
+                if text_buffer:
+                    try:
+                        line = text_buffer.decode(errors="ignore").strip()
+                        #if line.startswith("Measured sampling frequency"):
+                        print("STM32:", line)
+                    except Exception:
+                        pass
+                    text_buffer.clear()
+            else:
+                text_buffer += b
+
+        except Exception as e:
+            print("RX error:", e)
+            time.sleep(0.1)
+""" def serial_reader_loop@2200():
     global session_data, _collecting_batch, serial_port, reader_thread_started
 
     while reader_thread_started:
@@ -76,18 +152,6 @@ def serial_reader_loop():
         if line.startswith("Measured"):
             print("RX:", line)
 
-        """ if line == "DATA BEGIN":
-            _collecting_batch = True
-            continue
-
-        if line == "DATA END":
-            _collecting_batch = False
-            print(f"Batch received. Total samples so far: {len(session_data)}")
-            root.after(0, lambda: status_label.set("Batch received"))
-            continue
-
-        if _collecting_batch: """
-
         parts = line.split(",")
         #if len(parts) != 5:
         if len(parts) != 4:
@@ -104,7 +168,7 @@ def serial_reader_loop():
 
         session_data.append(row)
 
-        root.after(0, lambda: row_count.set(f"Rows collected: {len(session_data)}"))
+        root.after(0, lambda: row_count.set(f"Rows collected: {len(session_data)}")) """
 
 
 def start_collection():
@@ -116,7 +180,7 @@ def start_collection():
     threading.Thread(target=serial_reader_loop, daemon=True).start()
     serial_port.write(b"START\n")
     serial_port.flush()
-    #status_label.set("Collecting...")
+    status_label.set("Collecting...")
 
 
 def stop_collection():
@@ -164,7 +228,7 @@ def save_dataset():
     df = pd.DataFrame(session_data, columns=["timestamp", "ax", "ay", "az", "label"])
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     #filename = os.path.join(BASE_DIR, f"dataset_{int(time.time())}.csv")
-    filename = os.path.join(BASE_DIR, f"dataset_{timestamp}.csv")
+    filename = os.path.join(BASE_DIR, f"dataset_{label_text}_{timestamp}.csv")
     df.to_csv(filename, index=False)
 
     messagebox.showinfo("Saved", f"Dataset saved as:\n{filename}\nSamples: {len(session_data)}")
