@@ -15,7 +15,7 @@ SAMPLE_FMT = "<Ihhh"   # uint32, int16, int16, int16 (timestamp, ax, ay, az)
 SAMPLE_SIZE = struct.calcsize(SAMPLE_FMT)
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-POSITIONS = ["lying", "standing", "moving"]
+POSITIONS = ["lying", "standing", "moving", "normal", "abnormal"]
 label_text = ""
 
 
@@ -23,6 +23,8 @@ class LABELS(Enum):
     LYING = 1
     STANDING = 2
     MOVING = 3
+    NORMAL = 4
+    ABNORMAL = 5
 
 
 serial_port = None
@@ -209,6 +211,10 @@ def set_label(lbl: str):
         code = LABELS.STANDING.value
     elif lbl == "moving":
         code = LABELS.MOVING.value
+    elif lbl == "normal":
+        code = LABELS.NORMAL.value
+    elif lbl == "abnormal":
+        code = LABELS.ABNORMAL.value
     else:
         messagebox.showerror("Error", f"Unknown label: {lbl}")
         return
