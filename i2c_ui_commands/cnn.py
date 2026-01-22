@@ -14,6 +14,9 @@ from sklearn.metrics import (
 )
 from sklearn.utils.class_weight import compute_class_weight
 
+WINDOW_SIZE = 128
+OVERLAP = 64
+step = WINDOW_SIZE - OVERLAP
 
 USE_SEQUENTIAL_SPLIT = True   # False = evaluation, True = inference över tid
 LABEL_NAMES = ["lying", "moving", "standing"]
@@ -52,6 +55,11 @@ else:
 print("Train:", X_train.shape, y_train.shape)
 print("Test :", X_test.shape, y_test.shape)
 
+FS = 3330
+
+STEP = WINDOW_SIZE - OVERLAP
+
+time_test = np.arange(len(y_test)) * (STEP / FS)
 
 inputs = tf.keras.Input(shape=X.shape[1:])  # (128, 3)
 
@@ -131,33 +139,27 @@ if USE_SEQUENTIAL_SPLIT:
     plt.figure(figsize=(10, 4))
 
     plt.scatter(
-        np.where(correct)[0],
+        time_test[correct],
         y_pred[correct],
         c="green",
         label="Correct",
         s=30
     )
 
-    plt.plot(y_test, color="lightgray", alpha=0.5, label="Ground truth")
-
     plt.scatter(
-        np.where(~correct)[0],
+        time_test[~correct],
         y_pred[~correct],
-        c="red",
+        c = "red",
         label="Incorrect",
         s=30
     )
 
-    plt.yticks(
-        ticks=[0, 1, 2],
-        labels=LABEL_NAMES
-    )
-
-    plt.xlabel("Test window index")
+    plt.yticks([0, 1, 2], LABEL_NAMES)
+    plt.xlabel("Time (s)")
     plt.ylabel("Predicted class")
-    plt.title("Offline inference CNN predictions")
-    plt.legend()
+    plt.title("Offline inference CNN predictions over time")
     plt.grid(axis="y", linestyle="--", alpha=0.3)
+    plt.legend()
     plt.tight_layout()
     plt.show()
 

@@ -17,7 +17,7 @@ from sklearn.metrics import (
 import tensorflow as tf
 from sklearn.utils.class_weight import compute_class_weight
 
-USE_SEQUENTIAL_SPLIT = False   #False för evaluation, True för inference över tid
+USE_SEQUENTIAL_SPLIT = True   #False för evaluation, True för inference över tid
 
 X = np.load("X_features_mlp_vib.npy")  
 y = np.load("y_labels_mlp_vib.npy")
