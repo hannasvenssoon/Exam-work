@@ -16,7 +16,11 @@ from sklearn.metrics import (
 
 import tensorflow as tf
 
-USE_SEQUENTIAL_SPLIT = False   #False för evaluation, True för inference över tid
+FS = 3330                
+WINDOW_SIZE = int(0.5 * FS)    
+WINDOW_STRIDE = int(0.25 * FS)  
+
+USE_SEQUENTIAL_SPLIT = True   #False för evaluation, True för inference över tid
 
 X = np.load("X_features_mlp.npy")  
 y = np.load("y_labels_mlp.npy")
@@ -47,6 +51,10 @@ print("Test :", X_test.shape, y_test.shape)
 
 np.save("X_test_mlp.npy", X_test)
 np.save("y_test_mlp.npy", y_test)
+
+
+window_step_sec = WINDOW_STRIDE / FS  
+time_axis = np.arange(len(y_test)) * window_step_sec
 
 
 #MLP model
@@ -87,6 +95,7 @@ y_pred = np.argmax(y_pred_prob, axis=1)
 
 label_names = ["lying", "moving", "standing"]
 predicted_labels = [label_names[i] for i in y_pred]
+
 print("\nOffline inference predicted labels:")
 print(predicted_labels[:40]) #visar 30 första
 
@@ -99,39 +108,30 @@ correct = y_pred == y_test
 
 plt.figure(figsize=(10, 4))
 
-# Correct predictions
 plt.scatter(
-    np.where(correct)[0],
+    time_axis[correct],
     y_pred[correct],
     c="green",
     label="Correct",
     s=30
 )
 
-plt.plot(y_test, color="lightgray", alpha=0.5, label="Ground truth")
-
-# Incorrect predictions
 plt.scatter(
-    np.where(~correct)[0],
+    time_axis[~correct],
     y_pred[~correct],
     c="red",
     label="Incorrect",
     s=30
 )
 
-plt.yticks(
-    ticks=[0, 1, 2],
-    labels=["lying", "moving", "standing"]
-)
-
-plt.xlabel("Test window index")
+plt.yticks([0, 1, 2], ["lying", "moving", "standing"])
+plt.xlabel("Time (s)")
 plt.ylabel("Predicted class")
-plt.title("Offline inference MLP predictions ")
+plt.title("Offline inference MLP predictions over time")
 plt.legend()
 plt.grid(axis="y", linestyle="--", alpha=0.3)
 plt.tight_layout()
 plt.show()
-
 
 #Evaluation metrics
 acc = accuracy_score(y_test, y_pred)

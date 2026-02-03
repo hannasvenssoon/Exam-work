@@ -4,9 +4,9 @@ from sklearn.preprocessing import StandardScaler, LabelEncoder
 
 
 CSV_PATH = "dataset_lying_2026-01-19_10-11-39.csv" 
-FS = 3330                  # Hz
-WINDOW_SIZE = int(0.5 * FS)  # 0.5 s fönster
-WINDOW_STRIDE = int(0.25 * FS)  # 50% overlap
+FS = 3330               
+WINDOW_SIZE = int(0.5 * FS)  
+WINDOW_STRIDE = int(0.25 * FS)  
 
 FULL_SCALE_G = 4.0          
 LSB_PER_G = 32768 / FULL_SCALE_G
@@ -90,3 +90,4 @@ np.save("y_labels_mlp.npy", y_encoded)
 print("Preprocessing klar!")
 print("X shape:", X_scaled.shape)
 print("y shape:", y_encoded.shape)
+

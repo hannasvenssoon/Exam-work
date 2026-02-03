@@ -10,13 +10,21 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import struct
 
-BAUD = 921600
+BAUD = 115200
 SAMPLE_FMT = "<Ihhh"   # uint32, int16, int16, int16 (timestamp, ax, ay, az)
 SAMPLE_SIZE = struct.calcsize(SAMPLE_FMT)
+
+evaluation_log_file = None
+evaluation_log_path = None
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 POSITIONS = ["lying", "standing", "moving", "normal", "abnormal"]
 label_text = ""
+
+class MODE(Enum):
+    DATA_COLLECTION = 1
+    EVALUATION = 2
+
 
 class LABELS(Enum):
     LYING = 1
@@ -58,7 +66,7 @@ def connect_serial():
     except Exception as e:
         messagebox.showerror("Error", f"Could not open {port}\n{e}")
 
-def serial_reader_loop():
+def serial_collection_loop():
     global session_data, serial_port, reader_thread_started, label_text
 
     START_MARKER = b"\xAA\x55"
@@ -132,6 +140,30 @@ def serial_reader_loop():
         except Exception as e:
             print("RX error:", e)
             time.sleep(0.1)
+
+def serial_evaluation_loop():
+    global serial_port, reader_thread_started, evaluation_log_file
+
+    while reader_thread_started:
+        if serial_port is None:
+            time.sleep(0.05)
+            continue
+
+        try:
+            line = serial_port.readline().decode(errors="ignore").strip()
+            if not line:
+                continue
+
+            print(line)
+
+            if evaluation_log_file is not None:
+                evaluation_log_file.write(line + "\n")
+
+        except Exception as e:
+            print("RX error:", e)
+            time.sleep(0.1)
+
+
 """ def serial_reader_loop@2200():
     global session_data, _collecting_batch, serial_port, reader_thread_started
 
@@ -173,25 +205,49 @@ def serial_reader_loop():
 
 
 def start_collection():
-    global reader_thread_started
+    global reader_thread_started, evaluation_log_file, evaluation_log_path
+
     if serial_port is None:
         messagebox.showerror("Error", "Ingen COM-port vald.")
         return
+
     reader_thread_started = True
-    threading.Thread(target=serial_reader_loop, daemon=True).start()
+
+    if current_mode.get() == MODE.DATA_COLLECTION.value:
+        threading.Thread(target=serial_collection_loop, daemon=True).start()
+
+    elif current_mode.get() == MODE.EVALUATION.value:
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        evaluation_log_path = os.path.join(BASE_DIR, f"edge_evaluation_{timestamp}.txt")
+        evaluation_log_file = open(evaluation_log_path, "w", buffering=1)  # line-buffered
+        threading.Thread(target=serial_evaluation_loop, daemon=True).start()
+
     serial_port.write(b"START\n")
     serial_port.flush()
     status_label.set("Collecting...")
 
 
+
 def stop_collection():
-    global reader_thread_started
+    global reader_thread_started, evaluation_log_file
+
     if serial_port is None:
         return
+
     reader_thread_started = False
     serial_port.write(b"STOP\n")
     serial_port.flush()
+
+    """ if evaluation_log_file is not None:
+        evaluation_log_file.close()
+        messagebox.showinfo(
+            "Evaluation saved",
+            f"Evaluation log saved as:\n{evaluation_log_path}"
+        )
+        evaluation_log_file = None """
+
     status_label.set("Stopped")
+
 
 
 def set_label(lbl: str):
@@ -217,10 +273,11 @@ def set_label(lbl: str):
     else:
         messagebox.showerror("Error", f"Unknown label: {lbl}")
         return
-
-    """ cmd = f"LABEL:{code}\n".encode("utf-8")
-    serial_port.write(cmd)
-    serial_port.flush() """
+    
+    if current_mode.get() == MODE.EVALUATION.value:
+        cmd = f"LABEL:{lbl}\n".encode("utf-8")
+        serial_port.write(cmd)
+        serial_port.flush()
 
 
 def save_dataset():
@@ -259,6 +316,22 @@ connection_status = tk.StringVar(value="Not connected")
 tk.Label(root, textvariable=connection_status, fg="blue").pack(pady=5)
 
 tk.Button(root, text="Connect", width=20, command=connect_serial).pack(pady=5)
+
+tk.Label(root, text="Mode:", font=("Arial", 12)).pack(pady=8)
+current_mode = tk.IntVar(value=MODE.DATA_COLLECTION.value)
+tk.Radiobutton(
+    root,
+    text="Data collection",
+    variable=current_mode,
+    value=MODE.DATA_COLLECTION.value
+).pack(anchor="w", padx=80)
+
+tk.Radiobutton(
+    root,
+    text="Evaluation",
+    variable=current_mode,
+    value=MODE.EVALUATION.value
+).pack(anchor="w", padx=80)
 
 tk.Label(root, text="Select Position Label:", font=("Arial", 12)).pack(pady=10)
 

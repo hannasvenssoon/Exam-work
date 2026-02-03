@@ -18,6 +18,13 @@ from sklearn.utils.class_weight import compute_class_weight
 USE_SEQUENTIAL_SPLIT = True   # False = evaluation, True = inference över tid
 LABEL_NAMES = ["normal", "abnormal"]
 
+WINDOW_SIZE = 128
+OVERLAP     = 64
+STEP        = WINDOW_SIZE - OVERLAP
+FULL_SCALE_G = 4.0
+LSB_PER_G = 32768 / FULL_SCALE_G
+FS = 3330 
+
 
 X = np.load("X_train_cnn_vib.npy")    
 y = np.load("y_train_cnn_vib.npy")    
@@ -52,6 +59,9 @@ else:
 
 print("Train:", X_train.shape, y_train.shape)
 print("Test :", X_test.shape, y_test.shape)
+
+window_step_sec = WINDOW_SIZE / FS  
+time_axis = np.arange(len(y_test)) * window_step_sec
 
 
 inputs = tf.keras.Input(shape=X.shape[1:])  # (128, 3)
@@ -132,31 +142,29 @@ if USE_SEQUENTIAL_SPLIT:
     plt.figure(figsize=(10, 4))
 
     plt.scatter(
-        np.where(correct)[0],
+        time_axis[correct],
         y_pred[correct],
         c="green",
         label="Correct",
         s=30
     )
 
-    plt.plot(y_test, color="lightgray", alpha=0.5, label="Ground truth")
-
     plt.scatter(
-        np.where(~correct)[0],
+        time_axis[~correct],
         y_pred[~correct],
         c="red",
         label="Incorrect",
         s=30
-    )
+    )   
 
     plt.yticks(
         ticks=[0, 1],
         labels=LABEL_NAMES
     )
 
-    plt.xlabel("Test window index")
+    plt.xlabel("Time (s)")
     plt.ylabel("Predicted class")
-    plt.title("Offline inference CNN predictions")
+    plt.title("Offline inference CNN predictions over time")
     plt.legend()
     plt.grid(axis="y", linestyle="--", alpha=0.3)
     plt.tight_layout()

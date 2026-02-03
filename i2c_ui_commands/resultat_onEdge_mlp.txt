@@ -1,0 +1,37 @@
+MLP tests
+Accuracy     : 0.8556
+F1 macro     : 0.8553
+F1 weighted  : 0.8553
+Latency mean : 6.061 ms
+Latency std  : 0.232 ms
+Throughput   : 18 inf/s
+
+CNN tests
+Accuracy     : 0.9621
+F1 macro     : 0.9620
+F1 weighted  : 0.9620
+Latency mean : 55.508 ms
+Latency std  : 1.474 ms
+Throughput   : 33 inf/s
+
+MLP merged latency:
+  Mean : 6.061 ms
+  Std  : 0.232 ms
+MLP merged throughput:
+  Mean : 104.77 inf/s
+
+Normal test
+False positive rate: 0.1051
+Normal test latency:
+  Mean : 6.061 ms
+  Std  : 0.231 ms
+Normal test throughput:
+  Mean : 52.06 inf/s
+
+Abnormal test
+False negative rate: 0.1842
+Abnormal test latency:
+  Mean : 6.060 ms
+  Std  : 0.232 ms
+Abnormal test throughput:
+  Mean : 52.06 inf/s

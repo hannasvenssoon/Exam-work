@@ -17,6 +17,10 @@ from sklearn.metrics import (
 import tensorflow as tf
 from sklearn.utils.class_weight import compute_class_weight
 
+FS = 3330                
+WINDOW_SIZE = int(0.5 * FS)    
+WINDOW_STRIDE = int(0.25 * FS) 
+
 USE_SEQUENTIAL_SPLIT = True   #False för evaluation, True för inference över tid
 
 X = np.load("X_features_mlp_vib.npy")  
@@ -48,6 +52,9 @@ print("Test :", X_test.shape, y_test.shape)
 
 np.save("X_test_mlp.npy", X_test)
 np.save("y_test_mlp.npy", y_test)
+
+window_step_sec = WINDOW_STRIDE / FS  
+time_axis = np.arange(len(y_test)) * window_step_sec
 
 
 #MLP model
@@ -107,49 +114,45 @@ y_pred = np.argmax(y_pred_prob, axis=1)
 label_names = ["normal", "abnormal"]
 predicted_labels = [label_names[i] for i in y_pred]
 print("\nOffline inference predicted labels:")
-print(predicted_labels[:40]) #visar 30 första
+print(predicted_labels[:40]) #visar 40 första
 
 true_labels = [label_names[i] for i in y_test]
 for i in range(40):
     print(f"{i:02d}: true={true_labels[i]:9s}  pred={predicted_labels[i]}")
 
+if USE_SEQUENTIAL_SPLIT:
+    correct = y_pred == y_test
 
-correct = y_pred == y_test
+    plt.figure(figsize=(10, 4))
 
-plt.figure(figsize=(10, 4))
+    plt.scatter(
+        time_axis[correct],
+        y_pred[correct],
+        c="green",
+        label="Correct",
+        s=30
+    )
 
-# Correct predictions
-plt.scatter(
-    np.where(correct)[0],
-    y_pred[correct],
-    c="green",
-    label="Correct",
-    s=30
-)
+    plt.scatter(
+        time_axis[~correct],
+        y_pred[~correct],
+        c="red",
+        label="Incorrect",
+        s=30
+    )  
 
-plt.plot(y_test, color="lightgray", alpha=0.5, label="Ground truth")
+    plt.yticks(
+        ticks=[0, 1],
+        labels=["normal", "abnormal"]
+    )
 
-# Incorrect predictions
-plt.scatter(
-    np.where(~correct)[0],
-    y_pred[~correct],
-    c="red",
-    label="Incorrect",
-    s=30
-)
-
-plt.yticks(
-    ticks=[0, 1],
-    labels=["normal", "abnormal"]
-)
-
-plt.xlabel("Test window index")
-plt.ylabel("Predicted class")
-plt.title("Offline inference MLP predictions ")
-plt.legend()
-plt.grid(axis="y", linestyle="--", alpha=0.3)
-plt.tight_layout()
-plt.show()
+    plt.xlabel("Time (s)")
+    plt.ylabel("Predicted class")
+    plt.title("Offline inference MLP predictions over time")
+    plt.legend()
+    plt.grid(axis="y", linestyle="--", alpha=0.3)
+    plt.tight_layout()
+    plt.show()
 
 
 #Evaluation metrics
@@ -163,14 +166,14 @@ print(f"F1-score (Macro): {f1_macro:.4f}")
 print(f"F1-score (Weighted): {f1_weighted:.4f}")
 
 
-#Confusion matrix
-cm = confusion_matrix(y_test, y_pred)
+if not USE_SEQUENTIAL_SPLIT:
+    cm = confusion_matrix(y_test, y_pred)
 
-disp = ConfusionMatrixDisplay(
-    confusion_matrix=cm,
-    display_labels=["normal", "abnormal"]  
-)
+    disp = ConfusionMatrixDisplay(
+        confusion_matrix=cm,
+        display_labels=["normal", "abnormal"]  
+    )
 
-disp.plot(cmap="Blues")
-plt.title("Confusion Matrix MLP")
-plt.show()
+    disp.plot(cmap="Blues")
+    plt.title("Confusion Matrix MLP")
+    plt.show()

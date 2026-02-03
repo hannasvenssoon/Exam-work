@@ -18,6 +18,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 POSITIONS = ["lying", "standing", "moving", "normal", "abnormal"]
 label_text = ""
 
+
 class LABELS(Enum):
     LYING = 1
     STANDING = 2

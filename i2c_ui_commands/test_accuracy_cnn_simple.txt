@@ -1,0 +1,19 @@
+CNN Edge Inference
+Accuracy     : 0.8002
+F1 macro     : 0.8068
+F1 weighted  : 0.7996
+Latency mean : 57.490 ms
+Latency std  : 1.961 ms
+Throughput   : 12 inf/s
+
+Confusion matrix:
+[[205   0   4]
+ [  7 267  96]
+ [ 52  21 249]]
+CNN Edge latency:
+  Mean : 57.490 ms
+  Std  : 1.961 ms
+CNN Edge throughput:
+  Mean : 52.06 inf/s
+
+  

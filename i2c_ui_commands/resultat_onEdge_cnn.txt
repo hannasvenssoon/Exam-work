@@ -1,0 +1,29 @@
+CNN Merged tests
+Accuracy     : 0.9621
+F1 macro     : 0.9620
+F1 weighted  : 0.9620
+Latency mean : 55.508 ms
+Latency std  : 1.474 ms
+Throughput   : 33 inf/s
+
+CNN merged latency:
+  Mean : 55.508 ms
+  Std  : 1.474 ms
+CNN merged throughput:
+  Mean : 105.98 inf/s
+
+Normal test
+False positive rate: 0.0000
+Normal test latency:
+  Mean : 55.509 ms
+  Std  : 1.462 ms
+Normal test throughput:
+  Mean : 52.06 inf/s
+
+Abnormal test
+False negative rate: 0.0771
+Abnormal test latency:
+  Mean : 55.506 ms
+  Std  : 1.487 ms
+Abnormal test throughput:
+  Mean : 52.06 inf/s
